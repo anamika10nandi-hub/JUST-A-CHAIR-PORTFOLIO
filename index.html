@@ -1,1 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museum of Chairs</title>
+    <style>
+        /* GLOBAL STYLES */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Georgia', serif;
+            overflow: hidden;
+            background-color: #000;
+            color: #333;
+        }
 
+        /* SCREENS */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            transition: opacity 1s ease-in-out;
+        }
+        .active-screen {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* CHAT SCREEN */
+        #chat-screen {
+            background-color: #000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+        }
+        .message {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        .received {
+            background-color: #333333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .sent {
+            background-color: #007AFF;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            display: none;
+            transform-origin: right center;
+            transition: transform 2s ease-in, opacity 2s ease-in;
+        }
+        .chat-input-area {
+            margin-top: 30px;
+            display: flex;
+            width: 100%;
+            max-width: 400px;
+            gap: 10px;
+        }
+        #chat-input {
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid #444;
+            background: #111;
+            color: white;
+            font-size: 16px;
+        }
+        #send-btn {
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .zoom-effect {
+            transform: scale(20);
+            opacity: 0;
+        }
+
+        /* DOOR SCREEN */
+        #door-screen {
+            background-image: url('museum_door.jpg'); /* Replace with exact path if needed */
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+        }
+
+        /* MUSEUM INTERIOR SCREEN */
+        #museum-screen {
+            background-image: url('museum_interior.jpg'); /* Replace with exact path if needed */
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: repeat-x;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: none; /* Flex applied via JS */
+            align-items: flex-end;
+            padding-bottom: 50px; /* Floor height */
+        }
+        
+        .museum-content {
+            display: flex;
+            align-items: flex-end;
+            gap: 120px;
+            padding: 0 200px;
+            height: 100%;
+            min-width: max-content;
+        }
+
+        /* MUSEUM ITEMS */
+        .museum-item {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        .museum-item:hover {
+            transform: scale(1.05);
+        }
+        .museum-item img {
+            max-height: 250px;
+            object-fit: contain;
+            box-shadow: 0px 10px 15px rgba(0,0,0,0.5);
+        }
+        .glass-box {
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 20px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.2), 0 10px 20px rgba(0,0,0,0.5);
+        }
+        .glass-box img {
+            max-height: 150px;
+            box-shadow: none;
+        }
+
+        /* HOVER TAGS */
+        .hover-tag {
+            position: absolute;
+            top: -40px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: sans-serif;
+        }
+        .museum-item:hover .hover-tag {
+            opacity: 1;
+        }
+
+        /* EXIT BOARD */
+        .exit-board {
+            background: #2c2c2c;
+            color: #d4af37;
+            padding: 30px;
+            border: 5px solid #4a3b2c;
+            max-width: 500px;
+            font-size: 16px;
+            line-height: 1.6;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            margin-bottom: 50px;
+        }
+        .exit-door {
+            height: 300px;
+            width: 150px;
+            background: #3e2723;
+            border: 2px solid #1a1007;
+            margin-left: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: sans-serif;
+            text-transform: uppercase;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        /* MODAL */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #fdfaf2;
+            padding: 40px;
+            max-width: 600px;
+            border-radius: 5px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            font-size: 18px;
+            line-height: 1.6;
+            border: 1px solid #ccc;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #5a4a42;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .modal-close-hint {
+            display: block;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            font-family: sans-serif;
+        }
+
+        /* Utility classes */
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <!-- SCENE 1: CHAT INTERFACE -->
+    <div id="chat-screen" class="screen active-screen">
+        <div class="chat-container">
+            <div class="message received">It’s just a chair, chill out dude</div>
+            <div id="sent-message" class="message sent">JUST A CHAIR?!</div>
+        </div>
+        <div class="chat-input-area" id="chat-ui">
+            <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <!-- SCENE 2: MUSEUM DOOR -->
+    <div id="door-screen" class="screen"></div>
+
+    <!-- SCENE 3: MUSEUM INTERIOR -->
+    <div id="museum-screen" class="screen">
+        <div class="museum-content" id="museum-content">
+            <!-- Dynamic Content Injected Here via JS -->
+        </div>
+    </div>
+
+    <!-- GLOBAL MODAL -->
+    <div id="modal-overlay">
+        <div class="modal-content" id="modal-text">
+            <!-- Dynamic Text Here -->
+        </div>
+    </div>
+
+    <script>
+        // --- DATA STRUCTURES ---
+
+        const chairs = [
+            {
+                name: "1. Chair of Reniseneb",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Chair of Reniseneb.jpg",
+                text: "<strong>Time Period:</strong> New Kingdom Egypt (c. 1450 BCE).<br><strong>Designer:</strong> Royal craftsmen (commissioned for Reniseneb).<br><strong>Form:</strong> Slanted ivory-veneered backrest incised with hieroglyphs, four forward-facing carved leonine paws resting on turned cylindrical spool risers, and an open woven flax-linen cord seat.<br><strong>Used By:</strong> Reniseneb, an elite scribal and managerial official in the royal administration."
+            },
+            {
+                name: "2. Ceremonial Golden Throne of Tutankhamun",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Ceremonial Golden Throne of Tutankhamun.jpg",
+                text: "<strong>Time Period:</strong> New Kingdom Egypt (c. 1330 BCE).<br><strong>Designer:</strong> Royal artisans.<br><strong>Form:</strong> Elevated throne constructed of timber overlaid with sheet gold, lapis lazuli, turquoise glass paste, and carnelian.<br><strong>Used By:</strong> Pharaoh Tutankhamun as an earthly incarnation of the divine."
+            },
+            {
+                name: "3. Athenian Klismos",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Athenian Klismos.jpg",
+                text: "<strong>Time Period:</strong> Classical Greece (c. 450–400 BCE).<br><strong>Designer:</strong> Classical Greek woodworkers.<br><strong>Form:</strong> Balanced, measured proportions featuring sweeping outward saber stiles (epiklisis), a curved horizontal shoulder rail (epeidion), a permeable woven rush webbing seat, and an accompanying carved footstool (threnys).<br><strong>Used By:</strong> Free citizens and elite Athenian matrons (such as Hegeso) within the domestic household (oikos)."
+            },
+            {
+                name: "4. Medieval Stools and Timber Benches",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Medieval Stools and Timber Benches.jpg",
+                text: "<strong>Time Period:</strong> Medieval Feudalism (c. 1300 CE).<br><strong>Designer:</strong> Local carpenters.<br><strong>Form:</strong> Simple three-legged structures and rough-hewn wooden planks.<br><strong>Used By:</strong> Peasantry and commoners."
+            },
+            {
+                name: "5. King Edward’s Coronation Chair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/King Edward’s Coronation Chair.jpg",
+                text: "<strong>Time Period:</strong> Medieval Feudalism (c. 1300–1308 CE; constructed 1300–1301).<br><strong>Designer:</strong> Master Walter of Durham.<br><strong>Form:</strong> Heavy architectural box construction of English oak with pegged mortise-and-tenon joints, tall pointed Gothic gabled backrest flanked by crocketed pinnacles, gesso punchwork water-gilding, a hollow base compartment enclosing the Scottish Stone of Scone, and resting on gilded lions.<br><strong>Used By:</strong> English monarchs during coronation ceremonies."
+            },
+            {
+                name: "6. Caquetoire Armchair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Caquetoire Armchair.jpg",
+                text: "<strong>Time Period:</strong> French Renaissance (c. 1560–1580 CE).<br><strong>Designer:</strong> Renaissance cabinetmakers.<br><strong>Form:</strong> Seasoned walnut armchair with a wide, trapezoidal flaring seat pan, narrow vertical backsplat carved with architectural relief friezes, and outward-curving arms ending in ram's-head terminals.<br><strong>Used By:</strong> Elite aristocratic women in conversational humanist salons."
+            },
+            {
+                name: "7. Horseshoe-Back Armchair (Quanyi)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Horseshoe-Back Armchair ( Quanyi ).jpg",
+                text: "<strong>Time Period:</strong> Late Ming Dynasty (c. 1573–1620 CE).<br><strong>Designer:</strong> Ming master joiners.<br><strong>Form:</strong> Continuous five-segment circular crest rail joined with half-lap scarf joints (qianpidai) and hidden locking pins, an S-curved backsplat, palm-fiber and soft-mat webbing seat, and an integrated front footrest stretcher (jiaotai).<br><strong>Used By:</strong> Confucian scholar-officials (wenren / literati class)."
+            },
+            {
+                name: "8. Fauteuil à la reine (Louis XIV State Chair)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Fauteuil à la reine (Louis XIV State Chair).jpg",
+                text: "<strong>Time Period:</strong> French Ancien Régime (c. 1690–1710 CE).<br><strong>Designer:</strong> Royal court artisans.<br><strong>Form:</strong> Expansive armchair of carved walnut and beech with acanthus reliefs, royal monograms, thick water-gilding over red clay bole, curled horsehair stuffing, and Gobelins silk damask upholstery.<br><strong>Used By:</strong> The French King (Louis XIV) and Queen."
+            },
+            {
+                name: "9. Chaise à dos",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Chaise à dos.jpg",
+                text: "<strong>Time Period:</strong> French Ancien Régime (c. 1690–1710 CE).<br><strong>Designer:</strong> Royal court artisans.<br><strong>Form:</strong> Padded, upholstered chair lacking armrests.<br><strong>Used By:</strong> Members of the royal family and foreign visiting princes."
+            },
+            {
+                name: "10. Tabouret",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Tabouret.jpg",
+                text: "<strong>Time Period:</strong> French Ancien Régime (c. 1690–1710 CE).<br><strong>Designer:</strong> Royal court artisans.<br><strong>Form:</strong> Small, low, backless upholstered stool.<br><strong>Used By:</strong> Titled duchesses and peeresses."
+            },
+            {
+                name: "11. Sika Dwa Kofi (Golden Stool)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Sika Dwa Kofi (Golden Stool).jpg",
+                text: "<strong>Time Period:</strong> Ashanti Empire, Ghana (documented through 1900).<br><strong>Designer:</strong> Sacred Ashanti craftsmen.<br><strong>Form:</strong> Solid carved wood encased in thick sheets of hammered gold; rested upon its own dedicated stool.<br><strong>Used By:</strong> Not sat upon by any human; served as the sacred repository of the Ashanti nation's soul (sunsum)."
+            },
+            {
+                name: "12. Dutch Side Chair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/dutch side chair.jpg",
+                text: "<strong>Time Period:</strong> Dutch Golden Age (depicted c. 1630).<br><strong>Designer:</strong> Dutch woodworkers.<br><strong>Form:</strong> Turned oak frame with open arm clearances and a leather backrest secured with brass nails.<br><strong>Used By:</strong> Professional painter Judith Leyster."
+            },
+            {
+                name: "13. Victorian Slipper / Dressing Chair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Victorian Slipper.jpg",
+                text: "<strong>Time Period:</strong> Industrial 19th Century.<br><strong>Designer:</strong> Victorian furniture makers.<br><strong>Form:</strong> Low seat height, armless profile, and a straight, unpadded upright backboard.<br><strong>Used By:</strong> Middle-class Victorian women in private bedrooms and dressing rooms."
+            },
+            {
+                name: "14. Gentlemen’s Club / Library Chair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Gentlemen’s Club Library Chair.webp",
+                text: "<strong>Time Period:</strong> Industrial 19th Century.<br><strong>Designer:</strong> British upholsterers.<br><strong>Form:</strong> Deep, reclined low seat (pelvis lowered below knees), wide scroll-arm bolsters, tilted lumbar support, and hand-tufted leather packed with horsehair.<br><strong>Used By:</strong> Middle- and upper-class gentlemen."
+            },
+            {
+                name: "15. Thonet Chair No. 14 (Bistro Chair)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Thonet Chair No. 14 (Bistro Chair).jpg",
+                text: "<strong>Time Period:</strong> Industrial Revolution (1859 CE).<br><strong>Designer:</strong> Michael Thonet (Gebrüder Thonet).<br><strong>Form:</strong> Six standardized pieces of solid steam-bent beechwood assembled with ten machine screws, an armless loop backrest, and a hand-woven cane webbing seat.<br><strong>Used By:</strong> Middle and working classes in cafés, homes, and civic halls."
+            },
+            {
+                name: "16. Wassily Chair (Model B3)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Wassily Chair (Model B3).jpg",
+                text: "<strong>Time Period:</strong> Bauhaus Modernism (1925–1927 CE).<br><strong>Designer:</strong> Marcel Breuer.<br><strong>Form:</strong> Dematerialized frame of continuous cold-drawn, seamless tubular carbon steel with nickel/chrome plating and machine-bolted joints, strung with taut suspended straps of waxed Eisengarn cotton or leather.<br><strong>Used By:</strong> Modernist patrons and urban public spaces."
+            },
+            {
+                name: "17. Eames Lounge Chair & Ottoman (670/671)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Eames Lounge Chair & Ottoman.webp",
+                text: "<strong>Time Period:</strong> Postwar Industrialism (1956 CE).<br><strong>Designer:</strong> Charles and Ray Eames (for Herman Miller).<br><strong>Form:</strong> Three compound-curved shells of 5-ply Brazilian rosewood veneers bonded with synthetic resins, connected to a cast aluminum base via neoprene mounts, with tufted leather cushions set at a deep recline.<br><strong>Used By:</strong> Postwar corporate executives and managerial elites."
+            },
+            {
+                name: "18. Mid-Century Clerical Typing Chair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Mid-Century Clerical Typing Chair.jpg",
+                text: "<strong>Time Period:</strong> Mid-20th Century.<br><strong>Designer:</strong> Commercial office manufacturers.<br><strong>Form:</strong> Compact, upright, armless chair with vinyl covering.<br><strong>Used By:</strong> Female secretarial and clerical pools."
+            },
+            {
+                name: "19. The Monobloc (Fauteuil 300)",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/The Monobloc (Fauteuil 300).jpg",
+                text: "<strong>Time Period:</strong> Late Petrochemical Era (1972–Present).<br><strong>Designer:</strong> Henry Massonnet.<br><strong>Form:</strong> Seamless, jointless, stackable single-shot injection-molded isotactic polypropylene with integrated armrests and legs.<br><strong>Used By:</strong> Global populations across all socioeconomic classes in public, commercial, and domestic spaces."
+            },
+            {
+                name: "20. Aeron Office Chair",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/chairs/Aeron Office Chair.webp",
+                text: "<strong>Time Period:</strong> Digital Knowledge Economy (1994–Present).<br><strong>Designer:</strong> Bill Stumpf and Don Chadwick (for Herman Miller).<br><strong>Form:</strong> Die-cast recycled aluminum chassis, glass-filled nylon rim, biomorphic kinematic tilt mechanism, PostureFit sacral pad, and an open woven elastomeric Pellicle mesh suspension (built in sizes A, B, and C).<br><strong>Used By:</strong> Knowledge workers, tech professionals, and corporate office staff."
+            }
+        ];
+
+        const figures = [
+            {
+                tag: "[Gender and Chairs]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/figures/woman in victorian gown.jpg",
+                text: "Throughout history, chair design systematically denied women comfort to enforce patriarchal passivity. While men were granted expansive ease in deep club chairs and executive loungers, women were subjected to physical constraint—from rigid Renaissance caquetoires and backless Versailles tabourets to upright Victorian slipper chairs and stiff typing chairs. By engineering female seating for discomfort and restraint, patriarchal culture literally built passive submission into furniture form."
+            },
+            {
+                tag: "[Social Hierarchy and Chairs]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/figures/man in black suit.jpg",
+                text: "Elevating the pelvis historically served as an overt instrument of political and sacred dominance over populations relegated to the ground. From Egypt’s lion-footed scribal chairs to King Edward’s relic-encasing Coronation Chair, seating physically manifested state sovereignty. Versailles formalized this hierarchy—strictly graduating access from royal armchairs down to courtiers' backless stools and mandatory standing—while Ming quanyi armchairs projected scholar-official moral restraint. Seating’s political weight was absolute: in 1900, a British attempt to sit upon the Ashanti Empire's sacred Sika Dwa Kofi ignited an immediate war."
+            },
+            {
+                tag: "[economical hierarchy]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/figures/woman in saree.jpg",
+                text: "<strong>Ancient Civilizations:</strong> Rulers and scribes sat elevated on rare imported blackwood, ivory, and gold, while agricultural laborers crouched on dirt mats.<br><br><strong>Feudal Europe:</strong> Monarchs occupied gilded Gothic oak thrones enclosing sacred relics, relegating commoners to crude three-legged stools and rough timber benches.<br><br><strong>Ming China:</strong> Scholar-officials signaled moral discipline through seamless, unadorned Huanghuali rosewood, contrasting with the flashy carvings and gilding of commercial merchants.<br><br><strong>Ancien Régime:</strong> Royal authority sat in expansive silk-and-gold fauteuils, while duchesses competed for backless tabourets and lower nobles were forced to stand.<br><br><strong>Industrial Era:</strong> The mass-produced Thonet No. 14 dismantled elite exclusivity, using steam-bent wood and machine screws to make elevated seating affordable for the working class."
+            },
+            {
+                tag: "[Corporate Hierarchy]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/figures/man in black suit.jpg",
+                text: "<strong>Managerial Executives:</strong> Occupied Eames Lounge Chairs built of five-ply Brazilian rosewood and rich leather, symbolizing postwar corporate power and leisure.<br><br><strong>Clerical Workers:</strong> Assigned small, armless, vinyl-clad typing chairs designed strictly for non-reclining clerical output.<br><br><strong>Global Underclass vs. High-Tech Sector:</strong> The injection-molded polypropylene Monobloc became the cheapest elevated seating in history, serving low-income street stalls and public sites worldwide, whereas high-cost, adjustable Aeron chairs—crafted from cast aluminum and patented Pellicle mesh—became status markers of corporate tech offices."
+            }
+        ];
+
+        const materials = [
+            {
+                tag: "[1450 BCE (New Kingdom Egypt)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 1.jpg",
+                title: "African Blackwood, Ivory, and Flax-Linen Cord",
+                text: "<strong>Why Used:</strong> Imported blackwood and ivory displayed elite trade access and authority; open flax cord offered ventilation against Nilotic heat.<br><br><strong>Morphological Impact:</strong> Pegged mortise-and-tenon joints supported naturalistic carved lion paws, elevated on spool risers to isolate the frame from moisture and pests."
+            },
+            {
+                tag: "[450–400 BCE (Classical Greece)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 2.jpg",
+                title: "Steamed Maple/Beech and Rush Webbing",
+                text: "<strong>Why Used:</strong> Pliable woods responded well to steam softening; rush webbing promoted convective cooling in hot summers.<br><br><strong>Morphological Impact:</strong> Enabled curved, sweeping saber stiles (epiklisis) and a broad concave shoulder rail (epeidion) that freed the lower spine."
+            },
+            {
+                tag: "[1300–1308 CE (Medieval England)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 3.jpg",
+                title: "English Oak, Gesso, and Gold Leaf",
+                text: "<strong>Why Used:</strong> Slow-growth oak supplied feudal heft and draft protection; punchwork gilding established sacred majesty.<br><br><strong>Morphological Impact:</strong> Dictated a heavy, rectilinear architectural box form with crocketed Gothic tracery and a hollow seat base to enclose the Stone of Scone."
+            },
+            {
+                tag: "[1560–1580 CE (French Renaissance)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 4.jpg",
+                title: "French Walnut",
+                text: "<strong>Why Used:</strong> Offering structural stability and ease of detailed sculptural carving.<br><br><strong>Morphological Impact:</strong> Supported proud wooden trunnels, ram’s-head arm terminals, a narrow relief backsplat, and a wide, trapezoidal front seat pan."
+            },
+            {
+                tag: "[1573–1620 CE (Late Ming China)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 5.jpg",
+                title: "Huanghuali Rosewood and Palm Fiber",
+                text: "<strong>Why Used:</strong> Dense, oily hardwood with rich grain mirrored Confucian restraint without requiring nails, glue, or paint.<br><br><strong>Morphological Impact:</strong> Enabled five-segment half-lap scarf joints (qianpidai) with hidden locking pins to build an S-curved splat, a sweeping crest rail, and an integrated footrest stretcher (jiaotai)."
+            },
+            {
+                tag: "[1690–1710 CE (French Ancien Régime)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 6.jpg",
+                title: "Walnut, Beech, Horsehair, and Silk Damask",
+                text: "<strong>Why Used:</strong> Carvable frames supported water-gilding; dense horsehair and silk damask insulated sitters against stone palace drafts.<br><br><strong>Morphological Impact:</strong> Formed high-backed, deeply padded, expansive sovereign armchairs featuring carved acanthus and crown motifs."
+            },
+            {
+                tag: "[1859 CE (Industrial Revolution)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 7.jpg",
+                title: "Steam-Bent Beechwood, Iron Screws, and Cane",
+                text: "<strong>Why Used:</strong> Beech bent along the grain in steam autoclaves reduced timber waste; iron screws allowed disassembling and flat-packing.<br><br><strong>Morphological Impact:</strong> Reduced the chair to six modular bentwood rods, an armless loop backrest, and a breathable circular cane seat."
+            },
+            {
+                tag: "[1925–1927 CE (Bauhaus Modernism)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 8.jpg",
+                title: "Seamless Tubular Steel and Eisengarn Fabric",
+                text: "<strong>Why Used:</strong> Inspired by bicycle tubing; Mannesmann steel was lightweight, machine-fabricated, and dust-resistant for hygiene.<br><br><strong>Morphological Impact:</strong> Replaced bulky upholstery with an open, bolted, transparent framework that suspended the user's pelvis in mid-air."
+            },
+            {
+                tag: "[1956 CE (Postwar Era)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 9.jpg",
+                title: "Molded Rosewood Veneers, Synthetic Resins, and Cast Aluminum",
+                text: "<strong>Why Used:</strong> Adapted wartime molded plywood techniques to create durable, luxurious commercial executive furniture.<br><br><strong>Morphological Impact:</strong> Produced three ergonomic, compound-curved shells connected by flexible neoprene shock mounts and deep-cushioned leather."
+            },
+            {
+                tag: "[1972–Present (Petrochemical Era)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 10.jpg",
+                title: "Isotactic Polypropylene",
+                text: "<strong>Why Used:</strong> Low-cost polymer blended with calcium carbonate and titanium dioxide for single-shot, rapid automated manufacturing.<br><br><strong>Morphological Impact:</strong> Formed a seamless, jointless, stackable, and waterproof monobloc shell."
+            },
+            {
+                tag: "[1994–Present (Digital Age)]",
+                image: "JUST-A-CHAIR-PORTFOLIO/images/materials/materials 11.jpg",
+                title: "Die-Cast Aluminum, Nylon, and Pellicle Elastomeric Mesh",
+                text: "<strong>Why Used:</strong> Engineered to dissipate metabolic heat and support prolonged sedentary computer work.<br><br><strong>Morphological Impact:</strong> Replaced foam cushions with an ergonomic, biomorphic suspension frame powered by kinematic tilt mechanisms."
+            }
+        ];
+
+        // --- INTERACTION LOGIC ---
+
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const sentMessage = document.getElementById('sent-message');
+        const chatUi = document.getElementById('chat-ui');
+        
+        const chatScreen = document.getElementById('chat-screen');
+        const doorScreen = document.getElementById('door-screen');
+        const museumScreen = document.getElementById('museum-screen');
+        
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalText = document.getElementById('modal-text');
+        
+        let doorState = 0; // 0 = unclicked, 1 = clicked
+
+        // 1. Chat Interaction
+        sendBtn.addEventListener('click', handleChat);
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') handleChat();
+        });
+
+        function handleChat() {
+            if(chatInput.value.trim() === "JUST A CHAIR?!") {
+                chatUi.style.display = 'none';
+                sentMessage.style.display = 'block';
+                
+                // Trigger Zoom
+                setTimeout(() => {
+                    sentMessage.classList.add('zoom-effect');
+                }, 500);
+
+                // Transition to Door
+                setTimeout(() => {
+                    chatScreen.classList.remove('active-screen');
+                    doorScreen.classList.add('active-screen');
+                }, 2500);
+            } else {
+                alert("Type exactly: JUST A CHAIR?!");
+            }
+        }
+
+        // 2. Door Interaction
+        doorScreen.addEventListener('click', () => {
+            if (doorState === 0) {
+                showModal("<h2>Welcome</h2>Welcome to the museum of chairs by Anamika Nandi");
+                doorState = 1;
+            } else if (doorState === 1) {
+                doorScreen.classList.remove('active-screen');
+                museumScreen.classList.add('active-screen');
+                museumScreen.style.display = 'flex'; // Enable horizontal flex scroll
+            }
+        });
+
+        // 3. Populate Museum Content dynamically
+        const museumContent = document.getElementById('museum-content');
+
+        // Helper to build elements
+        function createItem(type, data) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'museum-item';
+            
+            const tag = document.createElement('div');
+            tag.className = 'hover-tag';
+            
+            const img = document.createElement('img');
+            img.src = data.image;
+            img.alt = data.name || data.tag;
+
+            if(type === 'chair') {
+                tag.innerText = data.name;
+                wrapper.onclick = () => showModal(`<h2>${data.name}</h2>${data.text}`);
+            } else if (type === 'figure') {
+                tag.innerText = data.tag;
+                wrapper.onclick = () => showModal(`<h2>${data.tag}</h2>${data.text}`);
+            } else if (type === 'material') {
+                wrapper.className = 'museum-item glass-box';
+                tag.innerText = data.tag;
+                wrapper.onclick = () => showModal(`<h2>${data.title}</h2>${data.text}`);
+            }
+
+            wrapper.appendChild(tag);
+            wrapper.appendChild(img);
+            museumContent.appendChild(wrapper);
+        }
+
+        // Interleave items sequentially to simulate a walking tour
+        let c = 0; // Chair index
+        let m = 0; // Material index
+        let f = 0; // Figure index
+
+        // Inject Figure 1 [Gender]
+        createItem('figure', figures[f++]);
+        
+        // Group 1: Ancient to Renaissance
+        for(let i = 0; i < 6; i++) {
+            createItem('chair', chairs[c++]);
+            if (m < 4) createItem('material', materials[m++]);
+        }
+
+        // Inject Figure 2 [Social]
+        createItem('figure', figures[f++]);
+
+        // Group 2: Ming to Industrial
+        for(let i = 0; i < 6; i++) {
+            createItem('chair', chairs[c++]);
+            if (m < 8) createItem('material', materials[m++]);
+        }
+
+        // Inject Figure 3 [Economical]
+        createItem('figure', figures[f++]);
+
+        // Group 3: Industrial to Modern
+        for(let i = 0; i < 8; i++) {
+            if(c < chairs.length) createItem('chair', chairs[c++]);
+            if (m < materials.length) createItem('material', materials[m++]);
+        }
+
+        // Inject Figure 4 [Corporate]
+        createItem('figure', figures[f++]);
+
+        // 4. End of Museum Board
+        const board = document.createElement('div');
+        board.className = 'exit-board';
+        board.innerHTML = "Chairs historically functioned as instruments of class, gender, and economic dominance, shaped directly by architecture, clothing, and manufacturing innovations. Rulers utilized monumental architectural forms, sacred carvings, and rare imports to visually elevate authority above ground-level laborers, while court protocols strictly codified rank through seat types. Concurrently, vestimentary demands and patriarchal norms sculpted chair form—narrowing backrests and flaring seat pans to enforce rigid modesty on corseted women, while male designs offered sprawling ease. Technological shifts from steam-bent wood to tubular steel and molded plastics ultimately democratized design, transforming an exclusive aristocratic luxury into an accessible global commodity.";
+        museumContent.appendChild(board);
+
+        // 5. Exit Door
+        const exit = document.createElement('div');
+        exit.className = 'exit-door';
+        exit.innerText = "Exit";
+        exit.onclick = () => {
+            museumScreen.classList.remove('active-screen');
+            museumScreen.style.display = 'none';
+            chatScreen.classList.add('active-screen');
+            
+            // Reset Chat
+            chatInput.value = '';
+            chatUi.style.display = 'flex';
+            sentMessage.style.display = 'none';
+            sentMessage.classList.remove('zoom-effect');
+            doorState = 0;
+            museumScreen.scrollLeft = 0;
+        };
+        museumContent.appendChild(exit);
+
+        // 6. Modal Functions
+        function showModal(htmlContent) {
+            modalText.innerHTML = htmlContent + '<span class="modal-close-hint">(Click anywhere to close)</span>';
+            modalOverlay.style.display = 'flex';
+        }
+
+        modalOverlay.addEventListener('click', () => {
+            if (doorState === 1 && modalOverlay.style.display === 'flex') {
+                // Special case: Closing the welcome door modal shouldn't do anything yet,
+                // the user must click the background to enter the museum.
+                modalOverlay.style.display = 'none';
+            } else {
+                modalOverlay.style.display = 'none';
+            }
+        });
+
+    </script>
+</body>
+</html>
